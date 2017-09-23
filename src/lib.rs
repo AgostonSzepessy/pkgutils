@@ -18,7 +18,7 @@ use octavo::octavo_digest::Digest;
 use octavo::octavo_digest::sha3::Sha512;
 use std::str;
 use std::fs::{self, File};
-use std::io::{self, stderr, Read, Write, BufWriter};
+use std::io::{self, stderr, Read, Write, BufRead, BufReader, BufWriter};
 use std::path::Path;
 
 pub use download::download;
@@ -197,5 +197,27 @@ impl Repo {
 
     pub fn add_remote(&mut self, remote: &str) {
         self.remotes.push(remote.to_string());
+    }
+
+    pub fn uninstall(&self, package: &str) -> io::Result<String> {
+        {
+            let file = File::open(format!("/pkg/{}.files", package))?;
+            let reader = BufReader::new(file);
+
+            for line in reader.lines() {
+                let l = line?;
+                let path = Path::new(&l);
+                if fs::metadata(path)?.is_file() {
+                    fs::remove_file(path)?;
+                }
+                else if fs::metadata(path)?.is_dir() {
+                    fs::remove_dir_all(path)?;
+                }
+            }
+        }
+
+        fs::remove_file(format!("/pkg/{}.files", package))?;
+
+        Ok(package.to_string())
     }
 }

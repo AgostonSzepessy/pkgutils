@@ -132,6 +132,11 @@ fn main() {
                  .multiple(true)
                  .required(true)
             )
+        ).subcommand(SubCommand::with_name("uninstall")
+            .arg(Arg::with_name("package")
+                .multiple(true)
+                .required(true)
+            )
         ).subcommand(SubCommand::with_name("upgrade")
         ).get_matches();
 
@@ -248,6 +253,12 @@ fn main() {
         ("sign", Some(m)) => {
             for file in m.values_of("file").unwrap() {
                 print_result!(repo.signature(file), "{}", file);
+            }
+        }
+        ("uninstall", Some(m)) => {
+            for package in m.values_of("package").unwrap() {
+                let res = repo.uninstall(package);
+                print_result!(res, "uninstalled {}", package);
             }
         }
         ("upgrade", _) => {

@@ -2,7 +2,7 @@ use libflate::gzip::Decoder;
 use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
-use std::io::{self, Error, ErrorKind, Read};
+use std::io::{self, Error, ErrorKind, Read, Write};
 use tar::{Archive, EntryType};
 use std::io::BufReader;
 
@@ -25,6 +25,18 @@ impl Package {
     }
 
     pub fn install(&mut self, dest: &str)-> io::Result<()> {
+        let mut package_files = File::open(format!("/pkg/{}.files", self.meta()?.name))?;
+
+        for i in self.archive.entries()? {
+            match i?.path()?.to_str() {
+                Some(s) => {
+                    package_files.write(format!("{}\n", s).as_bytes())?;
+                    package_files.flush()?;
+                },
+                None => return Err(Error::new(ErrorKind::Other, "Error during path conversion to unicode")),
+            }
+        }
+
         self.archive.unpack(dest)?;
         Ok(())
     }
